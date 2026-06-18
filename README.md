@@ -1,0 +1,1 @@
+# Java-Rule-Engine\n\n## Overview\nEnterprise-grade rule engine implementation in Java.\n\n## Quick Start (1-Click Build)\n\n```bash\ngit clone https://github.com/skylerblue333/Java-Rule-Engine.git\ncd Java-Rule-Engine\n# Build instructions depend on the language\n```\n
