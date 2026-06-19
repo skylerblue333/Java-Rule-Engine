@@ -1,23 +1,29 @@
-import asyncio
+"""
+Java-Rule-Engine: FastAPI microservice implementing Java Rule Engine domain logic
+"""
 import time
-from fastapi import FastAPI, BackgroundTasks
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
-app = FastAPI(title="Java-Rule-Engine")
+app = FastAPI(title="Java-Rule-Engine", version="3.0.0")
 
-class TaskPayload(BaseModel):
-    data: dict
+class EventRequest(BaseModel):
+    event_type: str
+    payload: dict
+    source: str
 
-async def process_data_background(payload: dict):
-    # Simulate heavy processing
-    await asyncio.sleep(1)
-    print(f"Processed: {payload}")
+events_store = []
 
-@app.post("/api/v1/process")
-async def process_endpoint(payload: TaskPayload, background_tasks: BackgroundTasks):
-    background_tasks.add_task(process_data_background, payload.data)
-    return {"status": "accepted", "processing_time_ms": int(time.time() * 1000)}
+@app.post("/api/v1/events")
+def publish_event(event: EventRequest):
+    events_store.append(event.dict())
+    return {"status": "published", "event_type": event.event_type, "total_events": len(events_store)}
+
+@app.get("/api/v1/events")
+def list_events():
+    return {"events": events_store[-10:], "total": len(events_store)}
+
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "version": "3.0.0"}
+    return {"status": "healthy", "service": "Java-Rule-Engine", "timestamp": int(time.time())}
