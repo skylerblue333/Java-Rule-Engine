@@ -1,12 +1,36 @@
-name: CI
-on: [push, pull_request]
+name: rules-ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
         with:
-          python-version: '3.11'
-      - run: pip install -r requirements.txt
-      - run: pytest tests/ -v
+          distribution: temurin
+          java-version: '21'
+      - name: Compile main sources
+        run: |
+          mkdir -p build/main
+          javac -Xlint:all -Werror -d build/main $(find src/main/java -name '*.java' -print)
+      - name: Compile tests
+        run: |
+          mkdir -p build/test
+          javac -Xlint:all -Werror -cp build/main -d build/test $(find src/test/java -name '*.java' -print)
+      - name: Run tests
+        run: java -cp build/main:build/test com.skycoin4444.rules.RuleEngineTest
+      - name: Build runnable jar
+        run: jar --create --file build/sky-rules.jar --main-class com.skycoin4444.rules.RuleCli -C build/main .
+      - name: Smoke test jar
+        run: test "$(java -jar build/sky-rules.jar 150)" = "example-high-value:review"
+      - name: Build image
+        run: docker build -t sky-rules:ci .
+      - name: Verify non-root image
+        run: test "$(docker run --rm --entrypoint=id sky-rules:ci -u)" != "0"
