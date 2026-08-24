@@ -1,44 +1,70 @@
-<!-- PORTFOLIO PROJECT PROFILE: maintained by the repository owner -->
+# Sky Rules — Java Rule Engine
 
-## Project profile and code-audit snapshot
+**Status: engineering beta.** The active implementation is now actually Java 21. CI compiles with `-Xlint:all -Werror`, runs deterministic tests, builds and smoke-tests a runnable JAR, builds the container, and verifies the image runs as a non-root user. Production deployment is not verified here.
 
-**What this is:** **Java-Rule-Engine** is a public repository described as: “Enterprise-grade rule engine implementation in Java. #SkyCoin4444 #AI #Blockchain #DevOps #Innovation” Its dominant language signals are **Python (4 files)**.
+## What it does
 
-**Why it has value:** Its value is best understood through the implementation evidence currently present in the repository: **18 tracked files** were observed in the shallow audit, with the source structure and existing documentation providing the project’s specific context. This README does not treat a prototype, experiment, or archive as a production system without supporting evidence.
+Sky Rules evaluates declarative rules against caller-supplied facts. Rules are ordered deterministically by descending priority and then rule ID, so repeated evaluations produce stable results for the same inputs.
 
-**Implementation evidence:** 2 test-related file(s) detected; 2 dependency or package manifest(s) detected; 2 build/CI/infrastructure signal(s) detected; and 3 documentation or governance file(s) detected. Test filenames observed include `tests/__init__.py`, `tests/test_main.py`. Dependency or package files include `package.json`, `requirements.txt`. Build, CI, or infrastructure signals include `Dockerfile`, `.github/workflows/ci.yml`.
+Supported operators:
 
-**Current status:** The repository is tracked on the `main` branch. The existing source tree, configuration, tests, workflows, and documentation remain authoritative for supported behavior and maturity. A code audit is not a production-readiness certification, and the presence of a test or workflow file does not establish that all checks pass.
+- `EQUALS`
+- `NOT_EQUALS`
+- `GREATER_THAN`
+- `GREATER_THAN_OR_EQUAL`
+- `LESS_THAN`
+- `LESS_THAN_OR_EQUAL`
+- `CONTAINS`
 
-**Relationship to the wider portfolio:** This repository is one focused component of the broader Skyler Blue Spillers portfolio across AI, software engineering, cloud and DevOps, cybersecurity, blockchain, finance, education, social systems, and creative work. It may provide a service boundary, implementation pattern, experiment, archive, or reusable idea for related repositories. Treat repositories as technical dependencies only where documented interfaces and verified project requirements support that relationship.
+Numeric comparisons use `BigDecimal`. The engine supports evaluating all matching rules or returning the highest-priority first match.
 
-**Quality and security note:** No obvious secret-like pattern was detected by the limited static scan; this is not a substitute for a security audit. No TODO/FIXME marker was detected in the scanned text files.
+## Safety model
 
----
+Rules are data. The engine does **not** execute JavaScript, Groovy, SpEL, shell commands, reflection, templates, or caller-provided bytecode. Rule count, fact count, identifiers, fields, expected values, and outcomes are bounded and validated.
 
-# Java Rule Engine
+## Build and test
 
-![GitHub stars](https://img.shields.io/github/stars/skylerblue333/Java-Rule-Engine?style=flat-square)
-![GitHub license](https://img.shields.io/github/license/skylerblue333/Java-Rule-Engine?style=flat-square)
+```bash
+mkdir -p build/main build/test
+javac -Xlint:all -Werror -d build/main $(find src/main/java -name '*.java' -print)
+javac -Xlint:all -Werror -cp build/main -d build/test $(find src/test/java -name '*.java' -print)
+java -cp build/main:build/test com.skycoin4444.rules.RuleEngineTest
+jar --create --file build/sky-rules.jar --main-class com.skycoin4444.rules.RuleCli -C build/main .
+java -jar build/sky-rules.jar 150
+```
 
-## 🌟 Overview
-**Java-Rule-Engine** is a professional-grade project within the **SkyCoin4444** ecosystem. It focuses on delivering high-value solutions in the domain of **Python**.
+Expected CLI output for `150`:
 
-## 🚀 Key Features
-- **Scalable Architecture**: Designed for enterprise-level growth and performance.
-- **Modern Standards**: Implements best practices for clean code and maintainability.
-- **Robust Integration**: Built to work seamlessly within modern cloud-native environments.
+```text
+example-high-value:review
+```
 
-## 🛠️ Technology Stack
-- **Primary Domain**: Python
-- **Ecosystem**: SkyCoin4444 Digital Platform
+## Container
 
-## 📂 Structure
-The project is organized into a modular structure to ensure clarity and ease of development.
+```bash
+docker build -t sky-rules .
+docker run --rm sky-rules 150
+docker run --rm --entrypoint=id sky-rules -u
+```
 
-## 👨‍💻 Author
-**Skyler Blue Spillers**
-*Professional Chess Player & Software Engineer*
+The image is expected to run as UID `10001`, not root.
 
----
-*Powered by SkyCoin4444*
+## Architecture
+
+`RuleEngine` is a dependency-free Java library. A `Rule` declares a field, operator, expected value, priority, and outcome. `evaluateAll` returns every match in deterministic order; `evaluateFirst` returns the highest-priority match or `null`.
+
+`RuleCli` is only a runnable example and container entrypoint. It is not a network service or policy-management server.
+
+## SKYCOIN4444 integration
+
+Keep the engine as a reusable standalone library. SKYCOIN4444 modules can wrap it behind application-specific adapters for marketplace eligibility, moderation routing, workflow decisions, education rules, or feature gating. Integrators should own rule storage, approval/versioning, authentication, authorization, audit history, and rollout controls rather than adding arbitrary code execution to this library.
+
+## History and scope
+
+The repository previously contained a small Python event-list service despite the Java name. That superseded code was removed from the active product branch but remains recoverable from Git history.
+
+Sky Rules is **not** Drools, a BPM engine, a distributed policy platform, or a verified production authorization system. See [`SECURITY.md`](SECURITY.md) and [`CHANGELOG.md`](CHANGELOG.md).
+
+## License
+
+See `LICENSE`.
