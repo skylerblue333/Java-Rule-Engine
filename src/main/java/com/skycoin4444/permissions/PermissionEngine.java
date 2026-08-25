@@ -27,8 +27,8 @@ public final class PermissionEngine {
 
     public record Request(String resource, String action) {
         public Request {
-            resource = bounded(resource, "resource", 1, 160);
-            action = bounded(action, "action", 1, 96);
+            resource = normalizeToken(resource, "resource");
+            action = normalizeToken(action, "action");
         }
     }
 
@@ -82,8 +82,7 @@ public final class PermissionEngine {
     }
 
     private static boolean matches(String pattern, String actual) {
-        String normalized = normalizeToken(actual, "request token");
-        return pattern.equals("*") || pattern.equals(normalized);
+        return pattern.equals("*") || pattern.equals(actual);
     }
 
     private static Set<String> normalizeSet(Set<String> values, String label, int maxSize) {
